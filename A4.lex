@@ -4,60 +4,71 @@ import java_cup.runtime.*;
 %type Symbol
 %function next_token
 %state COMMENT
-%class A3Scanner
-%eofval{ return null;
+%class A4Scanner
+%eofval{
+    return null;
 %eofval}
 
 IDENTIFIER = [a-zA-Z_][a-zA-Z0-9_]*
 DIGIT      = [0-9]
 LETTER     = [a-zA-Z]
-ID         = {LETTER}({LETTER}|{DIGIT})*
 NUMBER     = {DIGIT}+(\.{DIGIT}+)?
-ADD        = \+|-
-MULTIPLY   = \*|\/
 TYPE       = STRING|INT|REAL
 
 %% 
 
-<COMMENT>.|\n|\r               { }
+<COMMENT>.|\n|\r               { /* ignore */ }
 
-<YYINITIAL>{NUMBER}            { return new Symbol(A3Symbol.NUMBER); }
-<YYINITIAL>"\""[^\"\n]*"\""    { return new Symbol(A3Symbol.QUOTED); }
-<YYINITIAL>"'"[^'\n]*"'"       { return new Symbol(A3Symbol.QUOTED); }
+<YYINITIAL>{NUMBER}            { 
+    return new Symbol(A4Symbol.NUMBER, Integer.parseInt(yytext())); 
+}
 
-<YYINITIAL>[ \t\r]+            { }
-<YYINITIAL>\n                  { }
+<YYINITIAL>"\""[^\"\n]*"\""    { 
+    return new Symbol(A4Symbol.QUOTED, yytext()); 
+}
 
-<YYINITIAL> "WRITE"             { return new Symbol(A3Symbol.WRITE); }
-<YYINITIAL> "READ"              { return new Symbol(A3Symbol.READ); }
-<YYINITIAL> "IF"                { return new Symbol(A3Symbol.IF); }
-<YYINITIAL> "ELSE"              { return new Symbol(A3Symbol.ELSE); }
-<YYINITIAL> "RETURN"            { return new Symbol(A3Symbol.RETURN); }
-<YYINITIAL> "BEGIN"             { return new Symbol(A3Symbol.BEGIN); }
-<YYINITIAL> "END"               { return new Symbol(A3Symbol.END); }
-<YYINITIAL> "MAIN"              { return new Symbol(A3Symbol.MAIN); }
-<YYINITIAL> "STRING"            { return new Symbol(A3Symbol.TYPE); }
-<YYINITIAL> "INT"               { return new Symbol(A3Symbol.TYPE); }
-<YYINITIAL> "REAL"              { return new Symbol(A3Symbol.TYPE); }
+<YYINITIAL>"'"[^'\n]*"'"       { 
+    return new Symbol(A4Symbol.QUOTED, yytext()); 
+}
 
-<YYINITIAL>{ID}                { return new Symbol(A3Symbol.ID); }
+<YYINITIAL>[ \t\r\n]+          { /* ignore whitespace */ }
 
-<YYINITIAL> ";"                { return new Symbol(A3Symbol.SEMICOLON); }
-<YYINITIAL> ","                { return new Symbol(A3Symbol.COMMA); }
-<YYINITIAL> "("                { return new Symbol(A3Symbol.LPAREN); }
-<YYINITIAL> ")"                { return new Symbol(A3Symbol.RPAREN); }
+<YYINITIAL>"WRITE"             { return new Symbol(A4Symbol.WRITE); }
+<YYINITIAL>"READ"              { return new Symbol(A4Symbol.READ); }
+<YYINITIAL>"IF"                { return new Symbol(A4Symbol.IF); }
+<YYINITIAL>"ELSE"              { return new Symbol(A4Symbol.ELSE); }
+<YYINITIAL>"RETURN"            { return new Symbol(A4Symbol.RETURN); }
+<YYINITIAL>"BEGIN"             { return new Symbol(A4Symbol.BEGIN); }
+<YYINITIAL>"END"               { return new Symbol(A4Symbol.END); }
+<YYINITIAL>"MAIN"              { return new Symbol(A4Symbol.MAIN); }
+<YYINITIAL>"STRING"            { return new Symbol(A4Symbol.TYPE, yytext()); }
+<YYINITIAL>"INT"               { return new Symbol(A4Symbol.TYPE, yytext()); }
+<YYINITIAL>"REAL"              { return new Symbol(A4Symbol.TYPE, yytext()); }
+<YYINITIAL>"TRUE"              { return new Symbol(A4Symbol.TRUE); }
+<YYINITIAL>"FALSE"             { return new Symbol(A4Symbol.FALSE); }
 
-<YYINITIAL> {ADD}               { return new Symbol(A3Symbol.ADD); }
-<YYINITIAL> {MULTIPLY}           { return new Symbol(A3Symbol.MULTIPLY); }
+<YYINITIAL>{IDENTIFIER}        { 
+    return new Symbol(A4Symbol.ID, yytext()); 
+}
 
-<YYINITIAL> "=="               { return new Symbol(A3Symbol.EQ); }
-<YYINITIAL> "!="               { return new Symbol(A3Symbol.NOTEQ); }
-<YYINITIAL> "="                { return new Symbol(A3Symbol.ASSIGN); }
+<YYINITIAL>";"                 { return new Symbol(A4Symbol.SEMICOLON); }
+<YYINITIAL>","                 { return new Symbol(A4Symbol.COMMA); }
+<YYINITIAL>"("                 { return new Symbol(A4Symbol.LPAREN); }
+<YYINITIAL>")"                 { return new Symbol(A4Symbol.RPAREN); }
 
-<YYINITIAL>"/**" {yybegin(COMMENT); }
-<COMMENT>"**/" {yybegin(YYINITIAL); }
+<YYINITIAL>"+"                 { return new Symbol(A4Symbol.ADD, yytext()); }
+<YYINITIAL>"-"                 { return new Symbol(A4Symbol.ADD, yytext()); }
+<YYINITIAL>"*"                 { return new Symbol(A4Symbol.MULTIPLY, yytext()); }
+<YYINITIAL>"/"                 { return new Symbol(A4Symbol.MULTIPLY, yytext()); }
 
-\r|\n|\t|" " {}
+<YYINITIAL>"=="                { return new Symbol(A4Symbol.EQ); }
+<YYINITIAL>"!="                { return new Symbol(A4Symbol.NOTEQ); }
+<YYINITIAL>"="                 { return new Symbol(A4Symbol.ASSIGN); }
 
-<COMMENT>. {}
-<YYINITIAL> . { return new Symbol(A3Symbol.error); }
+<YYINITIAL>"/**"               { yybegin(COMMENT); }
+<COMMENT>"**/"                 { yybegin(YYINITIAL); }
+
+/* Error handling: catch any invalid character */
+<YYINITIAL>.                   { 
+    return new Symbol(A4Symbol.ERROR, yytext()); 
+}
