@@ -1,92 +1,218 @@
 import java.io.*;
+import java.util.*;
 
 /* Terminals (tokens returned by the scanner). */
-terminal          PLUS, MINUS, TIMES, DIVIDE, LPAREN, RPAREN, QUOTED,
-                  ID, WRITE, READ, IF, ELSE, RETURN, BEGIN, END, MAIN, TYPE, SEMICOLON,
-                  COMMA, ADD, MULTIPLY, EQ, NOTEQ, IDENTIFIER, DIGIT, LETTER, ASSIGN;
-
-
+terminal          PLUS, MINUS, TIMES, DIVIDE, LPAREN, RPAREN;
+terminal          WRITE, READ, IF, ELSE, RETURN, BEGIN, END, MAIN;
+terminal          SEMICOLON, COMMA, EQ, NOTEQ, ASSIGN, ERROR;
+terminal          TRUE, FALSE;  // Add these for boolean constants
+terminal String   QUOTED, ID, TYPE, ADD, MULTIPLY;
 terminal Integer  NUMBER;
 
-/* Non terminals */
-non terminal Integer Program;
-non terminal PrimaryExpr;
-non terminal Expression;
-non terminal MultiplicativeExpr;
-non terminal ActualParams;
-non terminal Statement;
-non terminal Statements;
-non terminal Block;
-non terminal BoolExpression;
-non terminal LocalVarDecl;
-non terminal AssignStmt;
-non terminal ReturnStmt;
-non terminal IfStmt;
-non terminal WriteStmt;
-non terminal ReadStmt;
-non terminal FunctionDecl;
-non terminal ParamList;
-non terminal Parameter;
+/* Non terminals – all return String */
+non terminal String Program;
+non terminal String FunctionDecl;
+non terminal String ParamList;
+non terminal String Parameter;
+non terminal String Block;
+non terminal String Statements;
+non terminal String Statement;
+non terminal String LocalVarDecl;
+non terminal String AssignStmt;
+non terminal String ReturnStmt;
+non terminal String IfStmt;
+non terminal String WriteStmt;
+non terminal String ReadStmt;
+non terminal String Expression;
+non terminal String MultiplicativeExpr;
+non terminal String PrimaryExpr;
+non terminal String BoolExpression;
+non terminal String ActualParams;
+
+/* Track if any error occurred - THIS WAS MISSING */
+non terminal Boolean hasError;
 
 /* The grammar */
+Program ::= 
+    {: hasError = false; :}
+    FunctionDecl:f
+    {: 
+        if (!hasError) {
+            RESULT = "import java.io.*;\n" +
+                     "import java.util.*;\n\n" +
+                     "public class A4 {\n" +
+                     f +
+                     "}";
+        } else {
+            RESULT = null;
+        }
+    :}
+    | Program:p FunctionDecl:f
+    {: 
+        if (!hasError) {
+            RESULT = p + "\n" + f;
+        } else {
+            RESULT = null;
+        }
+    :}
+    | error
+    {: 
+        hasError = true;
+        RESULT = null;
+    :}
+;
 
-Program ::= FunctionDecl {: RESULT = 1; :}
-         | Program:e FunctionDecl{: RESULT = 1+e; :};
+FunctionDecl ::= 
+    TYPE:t ID:n LPAREN ParamList:p RPAREN Block:b
+    {: 
+        RESULT = "    public static " + t + " " + n + "(" + p + ") " + b + "\n"; 
+    :}
+    | TYPE:t ID:n LPAREN RPAREN Block:b
+    {: 
+        RESULT = "    public static " + t + " " + n + "() " + b + "\n"; 
+    :}
+    | TYPE:t MAIN ID:n LPAREN ParamList:p RPAREN Block:b
+    {: 
+        RESULT = "    public static void main(String[] args) " + b + "\n"; 
+    :}
+    | TYPE:t MAIN ID:n LPAREN RPAREN Block:b
+    {: 
+        RESULT = "    public static void main(String[] args) " + b + "\n"; 
+    :}
+;
 
-FunctionDecl ::= TYPE ID LPAREN ParamList RPAREN Block
-              | TYPE ID LPAREN RPAREN Block
-              | TYPE MAIN ID LPAREN ParamList RPAREN Block
-              | TYPE MAIN ID LPAREN RPAREN Block;
+ParamList ::= 
+    Parameter:p
+    {: RESULT = p; :}
+    | ParamList:pl COMMA Parameter:p
+    {: RESULT = pl + ", " + p; :}
+;
 
-ParamList ::= Parameter
-           | ParamList COMMA Parameter;
+Parameter ::= 
+    TYPE:t ID:n
+    {: RESULT = t + " " + n; :}
+;
 
-Parameter ::= TYPE ID;
+Block ::= 
+    BEGIN END
+    {: RESULT = "{}\n"; :}
+    | BEGIN Statements:s END
+    {: RESULT = "{\n" + s + "    }\n"; :}
+;
 
-Block ::= BEGIN END
-       | BEGIN Statements END;
+Statements ::= 
+    Statement:s
+    {: RESULT = "        " + s; :}
+    | Statement:s Statements:st
+    {: RESULT = "        " + s + st; :}
+;
 
-Statements ::= Statement
-            | Statement Statements;
+Statement ::= 
+    Block:b
+    {: RESULT = b; :}
+    | LocalVarDecl:l
+    {: RESULT = l; :}
+    | AssignStmt:a
+    {: RESULT = a; :}
+    | ReturnStmt:r
+    {: RESULT = r; :}
+    | IfStmt:i
+    {: RESULT = i; :}
+    | WriteStmt:w
+    {: RESULT = w; :}
+    | ReadStmt:r
+    {: RESULT = r; :}
+;
 
-Statement ::= Block
-           | LocalVarDecl
-           | AssignStmt
-           | ReturnStmt
-           | IfStmt
-           | WriteStmt
-           | ReadStmt;
+LocalVarDecl ::= 
+    TYPE:t ID:n SEMICOLON
+    {: RESULT = t + " " + n + ";\n"; :}
+    | TYPE:t ID:n ASSIGN Expression:e SEMICOLON
+    {: RESULT = t + " " + n + " = " + e + ";\n"; :}
+    | TYPE:t ID:n ASSIGN QUOTED:q SEMICOLON
+    {: RESULT = t + " " + n + " = " + q + ";\n"; :}
+;
 
-LocalVarDecl ::= TYPE ID SEMICOLON
-               | TYPE ID ASSIGN Expression SEMICOLON
-               | TYPE ID ASSIGN QUOTED SEMICOLON;
+AssignStmt ::= 
+    ID:n ASSIGN Expression:e SEMICOLON
+    {: RESULT = n + " = " + e + ";\n"; :}
+    | ID:n ASSIGN QUOTED:q SEMICOLON
+    {: RESULT = n + " = " + q + ";\n"; :}
+;
 
-AssignStmt ::= ID ASSIGN Expression SEMICOLON
-             | ID ASSIGN QUOTED SEMICOLON;
+ReturnStmt ::= 
+    RETURN Expression:e SEMICOLON
+    {: RESULT = "return " + e + ";\n"; :}
+;
 
-ReturnStmt ::= RETURN Expression SEMICOLON;
+IfStmt ::= 
+    IF LPAREN BoolExpression:b RPAREN Block:blk
+    {: RESULT = "if (" + b + ") " + blk; :}
+    | IF LPAREN BoolExpression:b RPAREN Block:blk1 ELSE Block:blk2
+    {: RESULT = "if (" + b + ") " + blk1 + " else " + blk2; :}
+;
 
-IfStmt ::= IF LPAREN BoolExpression RPAREN Block
-         | IF LPAREN BoolExpression RPAREN Block ELSE Block;
+WriteStmt ::= 
+    WRITE LPAREN Expression:e COMMA QUOTED:q RPAREN SEMICOLON
+    {: 
+        RESULT = "try {\n" +
+                 "    FileWriter fw = new FileWriter(\"A4.output\", true);\n" +
+                 "    fw.write(String.valueOf(" + e + "));\n" +
+                 "    fw.close();\n" +
+                 "} catch (IOException ex) {}\n";
+    :}
+;
 
-WriteStmt ::= WRITE LPAREN Expression COMMA QUOTED RPAREN SEMICOLON;
+ReadStmt ::= 
+    READ LPAREN ID:n COMMA QUOTED:q RPAREN SEMICOLON
+    {: 
+        RESULT = "try {\n" +
+                 "    Scanner sc = new Scanner(new File(" + q + "));\n" +
+                 "    " + n + " = sc.nextInt();\n" +
+                 "    sc.close();\n" +
+                 "} catch (IOException ex) {}\n";
+    :}
+;
 
-ReadStmt ::= READ LPAREN ID COMMA QUOTED RPAREN SEMICOLON;
+Expression ::= 
+    MultiplicativeExpr:m
+    {: RESULT = m; :}
+    | Expression:e1 ADD:a MultiplicativeExpr:e2
+    {: RESULT = e1 + " " + a + " " + e2; :}
+;
 
+MultiplicativeExpr ::= 
+    PrimaryExpr:p
+    {: RESULT = p; :}
+    | MultiplicativeExpr:m1 MULTIPLY:m PrimaryExpr:m2
+    {: RESULT = m1 + " " + m + " " + m2; :}
+;
 
-Expression ::= MultiplicativeExpr
-            | Expression ADD MultiplicativeExpr;
+PrimaryExpr ::= 
+    NUMBER:n
+    {: RESULT = n.toString(); :}
+    | ID:n
+    {: RESULT = n; :}
+    | LPAREN Expression:e RPAREN
+    {: RESULT = "(" + e + ")"; :}
+    | ID:n LPAREN ActualParams:p RPAREN
+    {: RESULT = n + "(" + p + ")"; :}
+    | TRUE
+    {: RESULT = "true"; :}
+    | FALSE
+    {: RESULT = "false"; :}
+;
 
-MultiplicativeExpr ::= PrimaryExpr
-                    | MultiplicativeExpr MULTIPLY PrimaryExpr;
+BoolExpression ::= 
+    Expression:e1 EQ Expression:e2
+    {: RESULT = e1 + " == " + e2; :}
+    | Expression:e1 NOTEQ Expression:e2
+    {: RESULT = e1 + " != " + e2; :}
+;
 
-PrimaryExpr ::= NUMBER
-             | ID
-             | LPAREN Expression RPAREN
-             | ID LPAREN ActualParams RPAREN;
-
-BoolExpression ::= Expression EQ Expression
-                | Expression NOTEQ Expression;
-
-ActualParams ::= Expression
-              | ActualParams COMMA Expression;
+ActualParams ::= 
+    Expression:e
+    {: RESULT = e; :}
+    | ActualParams:ap COMMA Expression:e
+    {: RESULT = ap + ", " + e; :}
+;
