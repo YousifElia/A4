@@ -1,0 +1,92 @@
+import java.io.*;
+
+/* Terminals (tokens returned by the scanner). */
+terminal          PLUS, MINUS, TIMES, DIVIDE, LPAREN, RPAREN, QUOTED,
+                  ID, WRITE, READ, IF, ELSE, RETURN, BEGIN, END, MAIN, TYPE, SEMICOLON,
+                  COMMA, ADD, MULTIPLY, EQ, NOTEQ, IDENTIFIER, DIGIT, LETTER, ASSIGN;
+
+
+terminal Integer  NUMBER;
+
+/* Non terminals */
+non terminal Integer Program;
+non terminal PrimaryExpr;
+non terminal Expression;
+non terminal MultiplicativeExpr;
+non terminal ActualParams;
+non terminal Statement;
+non terminal Statements;
+non terminal Block;
+non terminal BoolExpression;
+non terminal LocalVarDecl;
+non terminal AssignStmt;
+non terminal ReturnStmt;
+non terminal IfStmt;
+non terminal WriteStmt;
+non terminal ReadStmt;
+non terminal FunctionDecl;
+non terminal ParamList;
+non terminal Parameter;
+
+/* The grammar */
+
+Program ::= FunctionDecl {: RESULT = 1; :}
+         | Program:e FunctionDecl{: RESULT = 1+e; :};
+
+FunctionDecl ::= TYPE ID LPAREN ParamList RPAREN Block
+              | TYPE ID LPAREN RPAREN Block
+              | TYPE MAIN ID LPAREN ParamList RPAREN Block
+              | TYPE MAIN ID LPAREN RPAREN Block;
+
+ParamList ::= Parameter
+           | ParamList COMMA Parameter;
+
+Parameter ::= TYPE ID;
+
+Block ::= BEGIN END
+       | BEGIN Statements END;
+
+Statements ::= Statement
+            | Statement Statements;
+
+Statement ::= Block
+           | LocalVarDecl
+           | AssignStmt
+           | ReturnStmt
+           | IfStmt
+           | WriteStmt
+           | ReadStmt;
+
+LocalVarDecl ::= TYPE ID SEMICOLON
+               | TYPE ID ASSIGN Expression SEMICOLON
+               | TYPE ID ASSIGN QUOTED SEMICOLON;
+
+AssignStmt ::= ID ASSIGN Expression SEMICOLON
+             | ID ASSIGN QUOTED SEMICOLON;
+
+ReturnStmt ::= RETURN Expression SEMICOLON;
+
+IfStmt ::= IF LPAREN BoolExpression RPAREN Block
+         | IF LPAREN BoolExpression RPAREN Block ELSE Block;
+
+WriteStmt ::= WRITE LPAREN Expression COMMA QUOTED RPAREN SEMICOLON;
+
+ReadStmt ::= READ LPAREN ID COMMA QUOTED RPAREN SEMICOLON;
+
+
+Expression ::= MultiplicativeExpr
+            | Expression ADD MultiplicativeExpr;
+
+MultiplicativeExpr ::= PrimaryExpr
+                    | MultiplicativeExpr MULTIPLY PrimaryExpr;
+
+PrimaryExpr ::= NUMBER
+             | ID
+             | LPAREN Expression RPAREN
+             | ID LPAREN ActualParams RPAREN;
+
+BoolExpression ::= Expression EQ Expression
+                | Expression NOTEQ Expression;
+
+ActualParams ::= Expression
+              | ActualParams COMMA Expression;
