@@ -1,0 +1,70 @@
+a4.lex: 
+
+import java_cup.runtime.*;
+%%
+%class A4Scanner
+%cup
+%{
+Symbol s(int i){return new Symbol(i);}
+Symbol s(int i,Object v){return new Symbol(i,v);}
+%}
+%%
+"/**"([^*]|\*[^*]|\*\*+[^*/])*\*\*+"/"|[ \t\n\r\f]+ {}
+"WRITE" {return s(A4Symbol.W);}
+"READ" {return s(A4Symbol.R);}
+"IF" {return s(A4Symbol.I);}
+"ELSE" {return s(A4Symbol.E);}
+"RETURN" {return s(A4Symbol.T);}
+"BEGIN" {return s(A4Symbol.B);}
+"END" {return s(A4Symbol.D);}
+"MAIN"|"main" {return s(A4Symbol.M);}
+"INT" {return s(A4Symbol.N);}
+"REAL" {return s(A4Symbol.L);}
+"STRING" {return s(A4Symbol.S);}
+"TRUE" {return s(A4Symbol.U);}
+"FALSE" {return s(A4Symbol.F);}
+"+" {return s(A4Symbol.PL);}
+"-" {return s(A4Symbol.MI);}
+"*" {return s(A4Symbol.MU);}
+"/" {return s(A4Symbol.DI);}
+"==" {return s(A4Symbol.EQ);}
+"!=" {return s(A4Symbol.NEQ);}
+"=" {return s(A4Symbol.ASG);}
+";" {return s(A4Symbol.SM);}
+"," {return s(A4Symbol.CM);}
+"(" {return s(A4Symbol.LP);}
+")" {return s(A4Symbol.R1);}
+[a-zA-Z][a-zA-Z0-9]* {return s(A4Symbol.ID,yytext());}
+[0-9]+(\.[0-9]+)? {return s(A4Symbol.NU,yytext());}
+\"[^\"]*\"|\'[^\']*\' {return s(A4Symbol.QS,yytext());}
+. {return s(A4Symbol.error);}
+
+a4.cup: 
+import java_cup.runtime.*;
+parser code{:public void syntax_error(Symbol c){throw new Error();}:};
+terminal String ID,NU,QS;
+terminal W,R,I,E,T,B,D,M,N,L,S,U,F,PL,MI,MU,DI,EQ,NEQ,ASG,SM,CM,LP,R1;
+non terminal String p,m,d,t,f,l,b,s,c,v,a,x,y,w,o,e,z,g,h,u,k;
+precedence right E;
+start with p;
+p::=m:j{:RESULT="import java.io.*;import java.util.*;\nclass A4{static void p(Object o,String f)throws Exception{PrintStream w=new PrintStream(f);String s=o+\"\";w.println(s.endsWith(\".0\")?s.substring(0,s.length()-2):s);w.close();}\nstatic double r(String f)throws Exception{return new Scanner(new File(f)).nextDouble();}\n"+j+"}";:};
+m::=m:q d:j{:RESULT=q+"\n"+j;:}|d:j{:RESULT=j;:};
+t::=N{:RESULT="double";:}|L{:RESULT="double";:}|S{:RESULT="String";:};
+d::=t:y M ID:i LP f:q R1 b:j{:RESULT="static "+y+" "+i+"("+q+")throws Exception"+j.substring(0,j.length()-1)+"return "+(y.charAt(0)=='S'?"null":"0")+";}\npublic static void main(String[]a)throws Exception{"+i+"();}\n";:}|t:y ID:i LP f:q R1 b:j{:RESULT="static "+y+" "+i+"("+q+")throws Exception"+j.substring(0,j.length()-1)+"return "+(y.charAt(0)=='S'?"null":"0")+";}\n";:};
+f::=l:q{:RESULT=q;:}|{:RESULT="";:};
+l::=l:q CM t:y ID:i{:RESULT=q+","+y+" "+i;:}|t:y ID:i{:RESULT=y+" "+i;:};
+b::=B s:j D{:RESULT="{"+j+"}";:};
+s::=s:q c:j{:RESULT=q+j;:}|{:RESULT="";:};
+c::=b:j{:RESULT=j+"\n";:}|v:j{:RESULT=j;:}|a:j{:RESULT=j;:}|x:j{:RESULT=j;:}|y:j{:RESULT=j;:}|w:j{:RESULT=j;:}|o:j{:RESULT=j;:};
+v::=t:y ID:i SM{:RESULT=y+" "+i+";\n";:}|t:y a:j{:RESULT=y+" "+j;:};
+a::=ID:i ASG e:j SM{:RESULT=i+"="+j+";\n";:}|ID:i ASG QS:q SM{:RESULT=i+"="+q.replace('\'','\"')+";\n";:};
+x::=T e:j SM{:RESULT="if(1>0)return "+j+";\n";:};
+y::=I LP h:q R1 c:j{:RESULT="if("+q+")\n"+j;:}|I LP h:q R1 c:j1 E c:j2{:RESULT="if("+q+")\n"+j1+"else\n"+j2;:};
+w::=W LP e:j CM QS:q R1 SM{:RESULT="p("+j+","+q.replace('\'','\"')+");\n";:};
+o::=R LP ID:i CM QS:q R1 SM{:RESULT=i+"=r("+q.replace('\'','\"')+");\n";:};
+e::=e:q PL z:j{:RESULT=q+"+"+j;:}|e:q MI z:j{:RESULT=q+"-"+j;:}|z:j{:RESULT=j;:};
+z::=z:q MU g:j{:RESULT=q+"*"+j;:}|z:q DI g:j{:RESULT=q+"/"+j;:}|g:j{:RESULT=j;:};
+g::=NU:n{:RESULT=n;:}|ID:i{:RESULT=i;:}|LP e:j R1{:RESULT="("+j+")";:}|ID:i LP u:q R1{:RESULT=i+"("+q+")";:};
+h::=e:q EQ e:j{:RESULT=q+"=="+j;:}|e:q NEQ e:j{:RESULT=q+"!="+j;:}|U{:RESULT="true";:}|F{:RESULT="false";:};
+u::=k:j{:RESULT=j;:}|{:RESULT="";:};
+k::=k:q CM e:j{:RESULT=q+","+j;:}|e:j{:RESULT=j;:};
