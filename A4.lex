@@ -68,7 +68,6 @@ TYPE       = STRING|INT|REAL
 <YYINITIAL>"/**"               { yybegin(COMMENT); }
 <COMMENT>"**/"                 { yybegin(YYINITIAL); }
 
-/* Error handling: catch any invalid character */
 <YYINITIAL>.                   { 
     return new Symbol(A4Symbol.ERROR, yytext()); 
 }
