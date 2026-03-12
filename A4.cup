@@ -29,35 +29,22 @@ non terminal String PrimaryExpr;
 non terminal String BoolExpression;
 non terminal String ActualParams;
 
-/* Track if any error occurred - THIS WAS MISSING */
-non terminal Boolean hasError;
-
 /* The grammar */
 Program ::= 
-    {: hasError = false; :}
     FunctionDecl:f
     {: 
-        if (!hasError) {
-            RESULT = "import java.io.*;\n" +
-                     "import java.util.*;\n\n" +
-                     "public class A4 {\n" +
-                     f +
-                     "}";
-        } else {
-            RESULT = null;
-        }
+        RESULT = "import java.io.*;\n" +
+                 "import java.util.*;\n\n" +
+                 "public class A4 {\n" +
+                 f +
+                 "}";
     :}
     | Program:p FunctionDecl:f
     {: 
-        if (!hasError) {
-            RESULT = p + "\n" + f;
-        } else {
-            RESULT = null;
-        }
+        RESULT = p + "\n" + f;
     :}
     | error
     {: 
-        hasError = true;
         RESULT = null;
     :}
 ;
