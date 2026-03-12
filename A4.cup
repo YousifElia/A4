@@ -159,6 +159,10 @@ ReadStmt ::=
                  "    sc.close();\n" +
                  "} catch (IOException ex) {}\n";
     :}
+    | READ LPAREN Expression:e COMMA QUOTED:q RPAREN SEMICOLON
+    {: 
+        RESULT = null; // Invalid READ statement
+    :}
 ;
 
 Expression ::= 
